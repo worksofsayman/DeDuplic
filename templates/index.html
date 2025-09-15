@@ -1,114 +1,118 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>CSV Duplicate ID Remover – Sayman Lal | Free Tool to Clean CSV Files</title>
-    <meta name="description" content="Effortlessly remove duplicate IDs from any column in your CSV files using this free tool built with Flask & Pandas. Upload, clean, and download instantly.">
-    <meta name="keywords" content="CSV duplicate remover, remove duplicate IDs from CSV, clean CSV files, CSV cleaner tool, remove duplicate rows, data preprocessing, Flask CSV tool, Pandas CSV cleaner, free CSV tool, data cleaning online">
-    <meta name="author" content="Sayman Lal">
-    <meta name="robots" content="index, follow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV Duplicate ID Remover – Sayman Lal | Free Tool</title>
+<link rel="icon" href="{{ url_for('static', filename='logo.png') }}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height:100vh; transition: background-color 0.3s, color 0.3s; }
-        .light-mode { background:#f5f7fa; color:#333; }
-        .dark-mode { background:#1e1e1e; color:#e1e1e1; }
-        .container { max-width:800px; }
-        .card { border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.2); transition:0.3s; }
-        .card:hover { transform:translateY(-4px); }
-        .btn-primary { background-color:#0d6efd; border:none; }
-        .btn-success { background-color:#198754; border:none; }
-        .btn-warning { background-color:#ffc107; color:#212529; border:none; }
-        .qr-image { max-width:300px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.25); }
-        .footer-text { font-size:0.85rem; color:#999; }
-        .mode-toggle { position:fixed; top:20px; right:20px; z-index:1000; }
-        input.form-control { background-color:inherit; color:inherit; }
-        input.form-control::placeholder { color:#aaa; }
-    </style>
+<style>
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; min-height:100vh; transition:0.3s;}
+.light-mode { background:#f5f7fa; color:#333; }
+.dark-mode { background:#1e1e1e; color:#e1e1e1; }
+.container { max-width:800px; }
+.card { border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.2); transition:0.3s;}
+.card:hover { transform:translateY(-4px);}
+.btn-primary { background-color:#0d6efd; border:none; }
+.btn-success { background-color:#198754; border:none; }
+.btn-warning { background-color:#ffc107; color:#212529; border:none; }
+.qr-image { max-width:300px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.25);}
+.footer-text { font-size:0.85rem; color:#999; }
+.mode-toggle { position:fixed; top:20px; right:20px; z-index:1000; }
+input.form-control { background-color:inherit; color:inherit;}
+input.form-control::placeholder { color:#aaa;}
+</style>
 </head>
-
 <body class="dark-mode">
 
-    <div class="mode-toggle">
-        <button id="modeToggleBtn" class="btn btn-secondary btn-sm">☀️ Light Mode</button>
-    </div>
+<div class="mode-toggle">
+    <button id="modeToggleBtn" class="btn btn-secondary btn-sm">☀️ Light Mode</button>
+</div>
 
-    <div class="container py-5 text-center">
-        <img src="{{ logo_url }}" alt="Logo" style="height:50px;">
-        <h1 class="mb-5">📊 CSV Duplicate ID Remover</h1>
+<div class="container py-5 text-center">
+    <img src="{{ logo_url }}" alt="Logo" style="height:50px;">
+    <h1 class="mb-5">📊 CSV Duplicate ID Remover</h1>
 
-        <div class="card shadow-sm p-4 mb-5 text-start">
-            <form method="post" enctype="multipart/form-data" class="mb-4">
-                <label for="fileInput" class="form-label fw-semibold">Choose your CSV file</label>
-                <input type="file" class="form-control form-control-lg mb-3" id="fileInput" name="file" accept=".csv" required>
+    <div class="card shadow-sm p-4 mb-5 text-start">
+        <form method="post" enctype="multipart/form-data" class="mb-4">
+            <label class="form-label fw-semibold">Choose your CSV file</label>
+            <input type="file" class="form-control form-control-lg mb-3" name="file" accept=".csv" required>
+            <label class="form-label fw-semibold">Enter column name with IDs to deduplicate</label>
+            <input type="text" class="form-control form-control-lg mb-3" name="column_name" placeholder="e.g., row_id" required>
+            <button type="submit" class="btn btn-primary btn-lg w-100">🚀 Upload & Remove Duplicates</button>
+        </form>
 
-                <label for="columnInput" class="form-label fw-semibold">Enter column name with IDs to deduplicate</label>
-                <input type="text" class="form-control form-control-lg mb-3" id="columnInput" name="column_name" placeholder="e.g., row_id" required>
-
-                <button type="submit" class="btn btn-primary btn-lg w-100">🚀 Upload & Remove Duplicates</button>
-            </form>
-
-            {% if duplicates %}
-            <div class="alert alert-success mt-4" role="alert">
-                <h5 class="alert-heading">✅ Duplicates Found & Removed</h5>
-                <p><strong>{{ duplicates }}</strong></p>
-            </div>
-
-            {% if csv_b64 %}
-            <div class="text-center mt-3">
-                <a href="{{ url_for('download_file', csv_b64=csv_b64) }}" class="btn btn-success btn-lg">📥 Download Cleaned CSV</a>
-            </div>
-            {% endif %}
-            {% endif %}
-
-            {% if error %}
-            <div class="alert alert-danger mt-4" role="alert">
-                <h5 class="alert-heading">⚠️ Error</h5>
-                <p>{{ error }}</p>
-            </div>
-            {% endif %}
-
-            <hr>
-            <p class="text-center footer-text">Made with ❤️ by <a href="https://worksofsayman.vercel.app" target="_blank">Sayman Lal</a></p>
+        {% if duplicates %}
+        <div class="alert alert-success mt-4" role="alert">
+            <h5 class="alert-heading">✅ Duplicates Found & Removed</h5>
+            <p><strong>{{ duplicates }}</strong></p>
         </div>
 
-        <div class="card shadow-sm p-4 text-center">
-            <h3 class="fw-bold mb-3">☕ Support the Developer</h3>
-            <p>If this tool helped you, please consider supporting me by buying a coffee!</p>
-            <button id="coffeeButton" class="btn btn-warning btn-lg mb-3">💛 Buy Me a Coffee</button>
-
-            <div id="qrContainer" class="mt-4" style="display: none;">
-                <img src="{{ qr_url }}" alt="QR Code for Support" class="qr-image img-fluid" />
-                <p class="text-muted mt-2">Scan this QR code to support ☕</p>
-            </div>
+        {% if csv_b64 %}
+        <div class="text-center mt-3">
+            <button id="downloadBtn" class="btn btn-success btn-lg">📥 Download Cleaned CSV</button>
         </div>
+
+        <script>
+        const downloadBtn = document.getElementById('downloadBtn');
+        downloadBtn.addEventListener('click', () => {
+            const csvB64 = "{{ csv_b64 }}";
+            const csvData = atob(csvB64);
+            const blob = new Blob([csvData], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'cleaned_file.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+        </script>
+        {% endif %}
+        {% endif %}
+
+        {% if error %}
+        <div class="alert alert-danger mt-4" role="alert">
+            <h5 class="alert-heading">⚠️ Error</h5>
+            <p>{{ error }}</p>
+        </div>
+        {% endif %}
+
+        <hr>
+        <p class="text-center footer-text">Made with ❤️ by <a href="https://worksofsayman.vercel.app" target="_blank">Sayman Lal</a></p>
     </div>
 
-    <script>
-        const modeToggleBtn = document.getElementById('modeToggleBtn');
-        const body = document.body;
+    <div class="card shadow-sm p-4 text-center">
+        <h3 class="fw-bold mb-3">☕ Support the Developer</h3>
+        <p>If this tool helped you, please consider supporting me by buying a coffee!</p>
+        <button id="coffeeButton" class="btn btn-warning btn-lg mb-3">💛 Buy Me a Coffee</button>
+        <div id="qrContainer" class="mt-4" style="display: none;">
+            <img src="{{ qr_url }}" alt="QR Code for Support" class="qr-image img-fluid">
+            <p class="text-muted mt-2">Scan this QR code to support ☕</p>
+        </div>
+    </div>
+</div>
 
-        modeToggleBtn.addEventListener('click', () => {
-            if (body.classList.contains('dark-mode')) {
-                body.classList.replace('dark-mode', 'light-mode');
-                modeToggleBtn.textContent = '🌙 Dark Mode';
-            } else {
-                body.classList.replace('light-mode', 'dark-mode');
-                modeToggleBtn.textContent = '☀️ Light Mode';
-            }
-        });
+<script>
+const modeToggleBtn = document.getElementById('modeToggleBtn');
+const body = document.body;
+modeToggleBtn.addEventListener('click', () => {
+    if(body.classList.contains('dark-mode')){
+        body.classList.replace('dark-mode','light-mode');
+        modeToggleBtn.textContent = '🌙 Dark Mode';
+    } else {
+        body.classList.replace('light-mode','dark-mode');
+        modeToggleBtn.textContent = '☀️ Light Mode';
+    }
+});
+document.getElementById('coffeeButton').addEventListener('click', () => {
+    const qrContainer = document.getElementById('qrContainer');
+    qrContainer.style.display = qrContainer.style.display === 'none' ? 'block' : 'none';
+});
+</script>
 
-        document.getElementById('coffeeButton').addEventListener('click', function() {
-            const qrContainer = document.getElementById('qrContainer');
-            qrContainer.style.display = qrContainer.style.display === 'none' ? 'block' : 'none';
-        });
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
