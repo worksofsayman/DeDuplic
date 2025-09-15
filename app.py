@@ -1,7 +1,8 @@
-from flask import Flask, request, send_file, render_template
+from flask import Flask, request, render_template
 import pandas as pd
 import io
 import os
+import base64
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -9,7 +10,7 @@ app.secret_key = os.urandom(24)
 @app.route('/', methods=['GET', 'POST'])
 def upload_and_process():
     duplicates_str = None
-    cleaned_csv = None
+    cleaned_csv_b64 = None
     error_msg = None
 
     if request.method == 'POST':
@@ -34,43 +35,22 @@ def upload_and_process():
                     # Remove duplicates
                     df_cleaned = df.drop_duplicates(subset=[column_name], keep='first')
 
-                    # Store cleaned CSV in memory buffer (will send directly on download)
+                    # Encode cleaned CSV in Base64 for JS download
                     csv_buffer = io.BytesIO()
                     df_cleaned.to_csv(csv_buffer, index=False)
                     csv_buffer.seek(0)
-                    cleaned_csv = csv_buffer.getvalue()
-
-                    # Save cleaned CSV temporarily as hidden input for download
-                    # We'll pass it as base64 to HTML to download directly
-                    import base64
-                    cleaned_csv_b64 = base64.b64encode(cleaned_csv).decode('utf-8')
-
-                    return render_template(
-                        'index.html',
-                        duplicates=duplicates_str,
-                        error=None,
-                        csv_b64=cleaned_csv_b64
-                    )
+                    cleaned_csv_b64 = base64.b64encode(csv_buffer.getvalue()).decode('utf-8')
 
             except Exception as e:
                 error_msg = str(e)
 
     return render_template(
         'index.html',
-        duplicates=None,
-        error=error_msg
-    )
-
-
-@app.route('/download/<string:csv_b64>')
-def download_file(csv_b64):
-    import base64
-    csv_bytes = base64.b64decode(csv_b64)
-    return send_file(
-        io.BytesIO(csv_bytes),
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='cleaned_file.csv'
+        duplicates=duplicates_str,
+        csv_b64=cleaned_csv_b64,
+        error=error_msg,
+        logo_url="/static/logo.png",
+        qr_url="/static/qr.png"
     )
 
 
