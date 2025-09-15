@@ -43,7 +43,7 @@ def upload_and_process():
                     # Remove duplicates
                     df_cleaned = df.drop_duplicates(subset=[column_name], keep='first')
 
-                    # Store CSV in session
+                    # Store cleaned CSV in session
                     csv_buffer = io.BytesIO()
                     df_cleaned.to_csv(csv_buffer, index=False)
                     csv_buffer.seek(0)
