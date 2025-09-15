@@ -1,5 +1,4 @@
-from flask import Flask, request, send_file, render_template, session, redirect, url_for
-from flask_session import Session
+from flask import Flask, request, send_file, render_template
 import pandas as pd
 import io
 import os
@@ -7,17 +6,15 @@ from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-app.config['SESSION_TYPE'] = 'filesystem'
-Session(app)
 
 # ---- BASE URL FOR SITEMAP ----
-BASE_URL = "http://deduplic.vercel.app"  # Change to your domain when deployed
+BASE_URL = "http://deduplic.vercel.app"  # Change to your deployed domain
 
 # ---- MAIN UPLOAD/PROCESS ROUTE ----
 @app.route('/', methods=['GET', 'POST'])
 def upload_and_process():
-    qr_code_url = url_for('static', filename='qr.png')
-    logo_url = url_for('static', filename='logo.png')
+    qr_code_url = "/static/qr.png"
+    logo_url = "/static/logo.png"
 
     if request.method == 'POST':
         uploaded_file = request.files.get('file')
@@ -42,12 +39,18 @@ def upload_and_process():
             # Remove duplicates
             df_cleaned = df.drop_duplicates(subset=[column_name], keep='first')
 
+            # Prepare CSV for download immediately
             csv_buffer = io.BytesIO()
             df_cleaned.to_csv(csv_buffer, index=False)
             csv_buffer.seek(0)
-            session['cleaned_csv'] = csv_buffer.getvalue()
 
-            return render_template('index.html', duplicates=duplicates_str, error=None, qr_url=qr_code_url, logo_url=logo_url)
+            # Send the cleaned CSV directly as download
+            return send_file(
+                csv_buffer,
+                mimetype='text/csv',
+                as_attachment=True,
+                download_name='cleaned_file.csv'
+            )
 
         except Exception as e:
             return render_template('index.html', duplicates=None, error=str(e), qr_url=qr_code_url, logo_url=logo_url)
@@ -55,27 +58,11 @@ def upload_and_process():
     return render_template('index.html', duplicates=None, error=None, qr_url=qr_code_url, logo_url=logo_url)
 
 
-# ---- DOWNLOAD ROUTE ----
-@app.route('/download')
-def download_file():
-    csv_data = session.get('cleaned_csv')
-    if not csv_data:
-        return redirect(url_for('upload_and_process'))
-
-    return send_file(
-        io.BytesIO(csv_data),
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name='cleaned_file.csv'
-    )
-
-
 # ---- SITEMAP ROUTE ----
 @app.route('/sitemap.xml', methods=['GET'])
 def sitemap():
     urls = [
         "/",         # Home
-        "/download", # Download CSV
     ]
 
     sitemap_xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -106,4 +93,4 @@ Sitemap: {BASE_URL}/sitemap.xml
 
 # ---- RUN APP ----
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
