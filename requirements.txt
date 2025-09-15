@@ -1,0 +1,6 @@
+flask
+flask_session
+jinja2
+python-multipart
+pandas
+itsdangerous
