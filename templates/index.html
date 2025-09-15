@@ -151,9 +151,11 @@
                 <p><strong>{{ duplicates }}</strong></p>
             </div>
 
+            {% if file_id %}
             <div class="text-center mt-3">
-                <a href="{{ url_for('download_file') }}" class="btn btn-success btn-lg">📥 Download Cleaned CSV</a>
+                <a href="{{ url_for('download_file', file_id=file_id) }}" class="btn btn-success btn-lg">📥 Download Cleaned CSV</a>
             </div>
+            {% endif %}
             {% endif %}
 
             {% if error %}
